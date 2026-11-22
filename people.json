@@ -1,0 +1,92 @@
+{
+  "people": [
+    {
+      "id": "maya",
+      "first_name": "Maya",
+      "photo": "assets/avatars/maya.png",
+      "city": "Sydney",
+      "lat": -33.8688,
+      "lng": 151.2093,
+      "one_liner": "Will out-hike you, then out-cook you.",
+      "recommended_by": "Arjun",
+      "agreed": true
+    },
+    {
+      "id": "priya",
+      "first_name": "Priya",
+      "photo": "assets/avatars/priya.png",
+      "city": "Mumbai",
+      "lat": 19.076,
+      "lng": 72.8777,
+      "one_liner": "Knows every bookstore, and the best coffee next to it.",
+      "recommended_by": "Ananya",
+      "agreed": true
+    },
+    {
+      "id": "sophie",
+      "first_name": "Sophie",
+      "photo": "assets/avatars/sophie.png",
+      "city": "London",
+      "lat": 51.5074,
+      "lng": -0.1278,
+      "one_liner": "Turns a rainy afternoon into a gallery crawl.",
+      "recommended_by": "Dev",
+      "agreed": true
+    },
+    {
+      "id": "ines",
+      "first_name": "Inês",
+      "photo": "assets/avatars/ines.png",
+      "city": "Lisbon",
+      "lat": 38.7223,
+      "lng": -9.1393,
+      "one_liner": "Makes pastéis and plans, usually in that order.",
+      "recommended_by": "Rita",
+      "agreed": true
+    },
+    {
+      "id": "lena",
+      "first_name": "Lena",
+      "photo": "assets/avatars/lena.png",
+      "city": "New York",
+      "lat": 40.7128,
+      "lng": -74.006,
+      "one_liner": "Will talk films until the subway stops running.",
+      "recommended_by": "Sam",
+      "agreed": true
+    },
+    {
+      "id": "yuki",
+      "first_name": "Yuki",
+      "photo": "assets/avatars/yuki.png",
+      "city": "Tokyo",
+      "lat": 35.6762,
+      "lng": 139.6503,
+      "one_liner": "Quiet at first, then the best stories in the room.",
+      "recommended_by": "Kenji",
+      "agreed": true
+    },
+    {
+      "id": "amelia",
+      "first_name": "Amelia",
+      "photo": "assets/avatars/amelia.png",
+      "city": "Melbourne",
+      "lat": -37.8136,
+      "lng": 144.9631,
+      "one_liner": "Has a favourite laneway for every mood.",
+      "recommended_by": "Jess",
+      "agreed": true
+    },
+    {
+      "id": "tara",
+      "first_name": "Tara",
+      "photo": "assets/avatars/tara.png",
+      "city": "Bangalore",
+      "lat": 12.9716,
+      "lng": 77.5946,
+      "one_liner": "Builds things by day, climbs on the weekend.",
+      "recommended_by": "Rohan",
+      "agreed": true
+    }
+  ]
+}

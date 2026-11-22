@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive, noimageindex">
+<meta name="googlebot" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#F7F0E6">
+<meta name="format-detection" content="telephone=no">
+<title>intros</title>
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/Fredoka.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  @font-face {
+    font-family: 'Fredoka';
+    font-style: normal;
+    font-weight: 300 700;
+    font-display: swap;
+    src: url('assets/fonts/Fredoka.woff2') format('woff2');
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; -webkit-text-size-adjust: 100%; }
+  body {
+    position: relative;
+    width: 100%;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    transition: opacity .2s ease;
+  }
+  body.is-ready { opacity: 1; }
+  header {
+    position: relative;
+    z-index: 5;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+  #globe-wrap {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+  }
+  #globe-wrap canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+    cursor: grab;
+  }
+  #globe-wrap canvas:active { cursor: grabbing; }
+  #pins {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 3;
+  }
+  .pin {
+    position: absolute;
+    left: 0; top: 0;
+    width: 44px; height: 44px;
+    border: 0; padding: 0;
+    background: transparent;
+    cursor: pointer;
+    pointer-events: auto;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pin:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; border-radius: 50%; }
+  #hint {
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 28px;
+    z-index: 4;
+    text-align: center;
+    pointer-events: none;
+    transition: opacity .45s ease, transform .45s ease;
+  }
+  #hint.is-gone { opacity: 0; transform: translateY(6px); }
+  #card {
+    position: absolute;
+    left: 16px; right: 16px;
+    bottom: 18px;
+    z-index: 8;
+    display: none;
+  }
+  #card.is-open { display: block; }
+  .card-close {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 44px; height: 44px;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+  }
+  .card-close span,
+  .card-close span::before {
+    display: block;
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 16px; height: 1.5px;
+    background: currentColor;
+    transform-origin: center;
+  }
+  .card-close span { transform: translate(-50%, -50%) rotate(45deg); }
+  .card-close span::before {
+    content: "";
+    transform: rotate(90deg);
+    left: 0; top: 0;
+  }
+  .card-photo {
+    display: block;
+    object-fit: cover;
+    flex: 0 0 auto;
+  }
+
+  body {
+    background: #F7F0E6;
+    color: #3b342e;
+    font-family: Fredoka, Nunito, system-ui, sans-serif;
+  }
+  #wash {
+    position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(ellipse 70% 50% at 50% 42%, #fffdf8 0%, #F7F0E6 70%);
+  }
+  header { padding: 14px 22px 2px; align-items: flex-start; }
+  header .brand {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: #3b342e;
+  }
+  header .tagline {
+    margin: 3px 0 0;
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    line-height: 1.15;
+    color: #9a8070;
+    white-space: nowrap;
+  }
+  header .count {
+    font-size: 12px;
+    font-weight: 600;
+    color: #7a4e3a;
+    background: #fff;
+    border: 2px solid #f0c9b0;
+    border-radius: 999px;
+    padding: 6px 12px;
+    box-shadow: 0 2px 0 #f0c9b0;
+  }
+  #hint {
+    font-size: 13px;
+    font-weight: 500;
+    color: #9a8070;
+  }
+  .pin-visual {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 22px; height: 28px;
+    transform: translate(-50%, -100%);
+  }
+  .pin-bubble {
+    position: absolute;
+    left: 50%; top: 2px;
+    width: 16px; height: 16px;
+    margin-left: -8px;
+    border-radius: 50%;
+    background: #F07167;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 0 rgba(180, 100, 80, 0.25);
+  }
+  .pin-stem {
+    position: absolute;
+    left: 50%; top: 16px;
+    width: 3px; height: 8px;
+    margin-left: -1.5px;
+    background: #F07167;
+    border-radius: 0 0 2px 2px;
+  }
+  .pin.is-on .pin-visual { transform: translate(-50%, -100%) scale(1.08); }
+  .pin.is-on .pin-bubble {
+    width: 18px; height: 18px;
+    margin-left: -9px;
+    background: #E85A4F;
+    box-shadow: 0 0 0 4px rgba(240,113,103,0.25);
+  }
+  #card {
+    left: 18px; right: 18px; bottom: 20px;
+    padding: 16px 52px 18px 16px;
+    display: none;
+    grid-template-columns: 80px 1fr;
+    gap: 14px;
+    align-items: start;
+    background: #fffdf8;
+    border: 3px solid #fff;
+    border-radius: 28px;
+    box-shadow:
+      0 1px 0 #f0d4c2,
+      0 14px 0 rgba(232, 196, 168, 0.35),
+      0 22px 28px rgba(90, 60, 40, 0.10);
+    color: #3b342e;
+  }
+  #card.is-open { display: grid; }
+  #card::before {
+    content: "";
+    position: absolute;
+    top: -10px; left: 28px;
+    width: 54px; height: 18px;
+    background: rgba(255, 210, 150, 0.55);
+    border-radius: 2px;
+    transform: rotate(-6deg);
+  }
+  .card-photo {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    box-shadow: 0 0 0 3px #f0c9b0;
+    background: #f7e1b5;
+  }
+  .card-kicker { display: none; }
+  .card-name {
+    margin: 2px 0 0;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .card-city {
+    margin: 0 0 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #c45c4a;
+  }
+  .card-line {
+    margin: 0 0 10px;
+    font-size: 14.5px;
+    font-weight: 500;
+    line-height: 1.35;
+    color: #5a4e46;
+  }
+  .card-by {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: #9a8070;
+  }
+  .card-close { color: #9a8070; }
+
+  /* iPhone safe areas (notch / home indicator); zero elsewhere. */
+  header {
+    padding-top: max(14px, env(safe-area-inset-top));
+    padding-left: max(22px, env(safe-area-inset-left));
+    padding-right: max(22px, env(safe-area-inset-right));
+  }
+  #hint { bottom: calc(28px + env(safe-area-inset-bottom)); }
+  #card { bottom: calc(20px + env(safe-area-inset-bottom)); }
+  #error {
+    position: absolute; left: 22px; right: 22px; top: 45%;
+    z-index: 9; text-align: center; font-size: 14px; color: #9a8070; margin: 0;
+  }
+</style>
+</head>
+<body>
+<div id="wash"></div>
+<header>
+  <div class="brand">
+    <h1>intros</h1>
+    <p class="tagline">a friend of a friend</p>
+  </div>
+  <div class="count" id="count">&nbsp;</div>
+</header>
+
+<div id="globe-wrap">
+  <canvas id="globe"></canvas>
+  <div id="pins"></div>
+</div>
+<p id="hint">Drag to spin</p>
+<article id="card" hidden></article>
+<noscript><p id="error">Intros needs JavaScript to show the globe.</p></noscript>
+<script src="vendor/three.min.js"></script>
+<script src="app.js"></script>
+<script>
+  IntrosApp.init().catch(function (err) {
+    console.error(err);
+    var p = document.createElement("p");
+    p.id = "error";
+    p.textContent = "The globe couldn't load. Please refresh.";
+    document.body.appendChild(p);
+    document.body.classList.add("is-ready");
+  });
+</script>
+</body>
+</html>
