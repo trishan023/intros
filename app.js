@@ -119,15 +119,24 @@
       return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
     }
 
+    // Listen on the globe wrapper so a drag that starts on a pin or chip
+    // still spins the globe. A press only becomes a drag after a few px,
+    // so a plain tap on a chip or dot still reaches its click handler.
+    let downX = 0;
+    let downY = 0;
+    let suppressClick = false;
+
     canvas.addEventListener("pointerdown", (e) => {
-      try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+      if (e.pointerType === "mouse" && e.button !== 0) return;
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pointers.size === 1) {
-        dragging = true;
-        lastX = e.clientX;
-        lastY = e.clientY;
+        dragging = false;
+        downX = lastX = e.clientX;
+        downY = lastY = e.clientY;
+        suppressClick = false;
       } else if (pointers.size === 2) {
         dragging = false;
+        suppressClick = true;
         pinchStartDist = distOfTwo();
         pinchStartRadius = spherical.radius;
       }
@@ -142,7 +151,13 @@
         apply();
         return;
       }
-      if (!dragging) return;
+      if (pointers.size !== 1) return;
+      if (!dragging) {
+        if (Math.hypot(e.clientX - downX, e.clientY - downY) < 6) return;
+        dragging = true;
+        suppressClick = true;
+        try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+      }
       const dx = e.clientX - lastX;
       const dy = e.clientY - lastY;
       lastX = e.clientX;
@@ -165,6 +180,14 @@
     }
     canvas.addEventListener("pointerup", endPointer);
     canvas.addEventListener("pointercancel", endPointer);
+    // a drag that ends over a chip or dot must not open a card
+    canvas.addEventListener("click", (e) => {
+      if (suppressClick) {
+        e.stopPropagation();
+        e.preventDefault();
+        suppressClick = false;
+      }
+    }, true);
 
     canvas.addEventListener(
       "wheel",
@@ -206,8 +229,39 @@
     };
   }
 
-  const PIN_MARKUP =
-    '<span class="pin-visual" aria-hidden="true"><span class="pin-bubble"></span><span class="pin-stem"></span></span>';
+  const CHIP_H = 24;          // chip height (px), matches CSS
+  const CHIP_HIT_PAD = 10;    // invisible tap padding above/below a chip (24 + 2*10 = 44px)
+  const DOT_R = 4.5;          // visual dot radius (9px dot)
+
+  function rectsOverlap(a, b, pad) {
+    return !(a.r + pad <= b.l || a.l - pad >= b.r || a.b + pad <= b.t || a.t - pad >= b.b);
+  }
+
+  /* Candidate chip slots relative to the dot centre: [left, top, needsLeader].
+     The first six follow the approved mockup's order; the rest are extra
+     fallbacks so busy areas still avoid overlap. */
+  function chipSlots(w, onLeft) {
+    const H = CHIP_H;
+    const above = -7 - H;
+    const s = {
+      above: [-w / 2, above, false],
+      upLeft: [-w + 6, above, false],
+      left: [-w - 8, above, false],
+      upRight: [-6, above, false],
+      right: [8, above, false],
+      below: [-w / 2, 9, false],
+      belowLeft: [-w + 6, 9, false],
+      belowRight: [-6, 9, false],
+      sideLeft: [-w - 12, -H / 2, false],
+      sideRight: [12, -H / 2, false],
+      above2: [-w / 2, above - H - 8, true],
+      below2: [-w / 2, 9 + H + 8, true],
+    };
+    const order = onLeft
+      ? ["above", "upRight", "right", "below", "upLeft", "left", "belowRight", "belowLeft", "sideRight", "sideLeft", "above2", "below2"]
+      : ["above", "upLeft", "left", "below", "upRight", "right", "belowLeft", "belowRight", "sideLeft", "sideRight", "above2", "below2"];
+    return order.map((k) => [k].concat(s[k]));
+  }
 
   async function init() {
     const theme = THEME;
@@ -285,7 +339,7 @@
     const card = buildCard(cardRoot);
 
     function setCard(person) {
-      pinsRoot.querySelectorAll(".pin").forEach((el) => {
+      pinsRoot.querySelectorAll(".pin, .pin-chip").forEach((el) => {
         el.classList.toggle("is-on", !!person && el.dataset.id === person.id);
       });
       if (!person) {
@@ -310,45 +364,163 @@
     });
 
     people.forEach((person) => {
+      const open = (e) => {
+        e.stopPropagation();
+        setCard(person);
+      };
+      // Dot: a 44px button centred exactly on the city.
       const el = document.createElement("button");
       el.type = "button";
       el.className = "pin";
       el.dataset.id = person.id;
       el.setAttribute("aria-label", `${person.name} in ${person.city}`);
-      el.innerHTML = PIN_MARKUP;
+      el.innerHTML = '<span class="pin-dot" aria-hidden="true"></span><span class="pin-leader" aria-hidden="true"></span>';
       el.addEventListener("click", (e) => {
         e.stopPropagation();
-        setCard(person);
+        setCard(nearestDot(e, person));
       });
-      pinsRoot.appendChild(el);
+      // Chip: face + first name. Its own element so chips always sit above dot targets.
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "pin-chip";
+      chip.dataset.id = person.id;
+      chip.tabIndex = -1;
+      chip.setAttribute("aria-hidden", "true");
+      const face = document.createElement("img");
+      face.className = "pin-face";
+      face.alt = "";
+      face.width = 36;
+      face.height = 36;
+      face.decoding = "async";
+      face.src = person.avatar;
+      const name = document.createElement("span");
+      name.className = "pin-name";
+      name.textContent = person.name;
+      chip.append(face, name);
+      chip.addEventListener("click", open);
+      face.addEventListener("load", () => { person.chipW = 0; });
+      pinsRoot.append(el, chip);
       person.el = el;
+      person.chip = chip;
+      person.chipW = 0;
       person.world = latLonToVec3(person.lat, person.lon, theme.radius * 1.02);
     });
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => people.forEach((p) => { p.chipW = 0; }));
+    }
+
+    // Dot targets are 44px, so close cities overlap; open the dot nearest the tap.
+    function nearestDot(e, fallback) {
+      if (!e.clientX && !e.clientY) return fallback; // keyboard activation
+      const wr = wrap.getBoundingClientRect();
+      const px = e.clientX - wr.left;
+      const py = e.clientY - wr.top;
+      let best = fallback;
+      let bestD = Infinity;
+      for (const p of people) {
+        if (!p.screen || p.screen.vis < 0.2) continue;
+        const d = Math.hypot(p.screen.x - px, p.screen.y - py);
+        if (d < bestD) { bestD = d; best = p; }
+      }
+      return bestD <= 24 ? best : fallback;
+    }
+
+    function chipWidth(person) {
+      if (!person.chipW) {
+        person.chip.classList.remove("is-hidden");
+        person.chipW = person.chip.offsetWidth || 60;
+      }
+      return person.chipW;
+    }
+
+    /* Place chips without overlapping each other or other dots. Dots never move. */
+    function layoutChips(items, w, h) {
+      const placed = [];
+      const dots = items.map((it) => ({
+        id: it.person.id,
+        l: it.x - DOT_R, r: it.x + DOT_R, t: it.y - DOT_R, b: it.y + DOT_R,
+      }));
+      const order = items.filter((it) => it.showChip).sort((a, b) => b.dot - a.dot);
+      for (const it of order) {
+        const cw = chipWidth(it.person);
+        const onLeft = it.x < w * 0.42;
+        let chosen = null;
+        for (const [slot, dx, dy, leader] of chipSlots(cw, onLeft)) {
+          const r = { l: it.x + dx, t: it.y + dy, r: it.x + dx + cw, b: it.y + dy + CHIP_H };
+          if (r.l < 8 || r.r > w - 8 || r.t < 4 || r.b > h - 8) continue;
+          const hit = { l: r.l, r: r.r, t: r.t - CHIP_HIT_PAD, b: r.b + CHIP_HIT_PAD };
+          if (placed.some((p) => rectsOverlap(r, p, 4))) continue;
+          if (dots.some((d) => d.id !== it.person.id && rectsOverlap(hit, d, 1))) continue;
+          chosen = { slot, dx, dy, leader, rect: r };
+          break;
+        }
+        it.chipLayout = chosen;
+        if (chosen) placed.push(chosen.rect);
+      }
+    }
 
     const _v = new THREE.Vector3();
     function updatePins() {
       const w = wrap.clientWidth;
       const h = wrap.clientHeight;
       camera.updateMatrixWorld();
+      const items = [];
       for (const person of people) {
         _v.copy(person.world).project(camera);
         const x = (_v.x * 0.5 + 0.5) * w;
         const y = (-_v.y * 0.5 + 0.5) * h;
         const dot = facingAmount(person.world, camera);
-        const el = person.el;
-        el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
         let vis = 1;
         if (dot < 0.04) vis = 0;
         else if (dot < 0.18) vis = (dot - 0.04) / 0.14;
         if (_v.z > 1) vis = 0;
+        const el = person.el;
+        el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
         el.style.opacity = String(vis);
         el.style.pointerEvents = vis < 0.2 ? "none" : "auto";
         el.style.zIndex = String(200 + Math.round(dot * 80));
+        el.classList.toggle("is-back", dot < 0.08);
+        person.screen = { x, y, vis };
+        const it = { person, x, y, dot, vis, showChip: vis >= 0.45, chipLayout: null };
+        if (vis > 0.15) items.push(it);
+        else person.chip.classList.add("is-hidden");
       }
+      layoutChips(items, w, h);
+      for (const it of items) {
+        const { person, chipLayout: c } = it;
+        const chip = person.chip;
+        const el = person.el;
+        if (!c) {
+          chip.classList.add("is-hidden");
+          el.classList.remove("has-leader");
+          continue;
+        }
+        chip.classList.remove("is-hidden");
+        chip.style.transform = `translate(${c.rect.l}px, ${c.rect.t}px)`;
+        chip.style.opacity = String(it.vis);
+        chip.style.pointerEvents = it.vis < 0.2 ? "none" : "auto";
+        chip.style.zIndex = String(400 + Math.round(it.dot * 80));
+        chip.classList.toggle("is-back", it.dot < 0.08);
+        if (c.leader) {
+          // line from the dot to the nearest edge of its chip
+          const ex = Math.max(c.rect.l, Math.min(it.x, c.rect.r)) - it.x;
+          const ey = (c.rect.t > it.y ? c.rect.t : c.rect.b) - it.y;
+          el.style.setProperty("--leader-len", Math.hypot(ex, ey) + "px");
+          el.style.setProperty("--leader-rot", -Math.atan2(ex, ey) + "rad");
+          el.classList.add("has-leader");
+        } else {
+          el.classList.remove("has-leader");
+        }
+      }
+      global.__PIN_LAYOUT = items.map((it) => ({
+        id: it.person.id, x: it.x, y: it.y, vis: it.vis,
+        chip: it.chipLayout ? Object.assign({ slot: it.chipLayout.slot }, it.chipLayout.rect) : null,
+      }));
     }
 
+    global.__INTROS = { camera, wrap, people };
     const fit = fittedDistance();
-    attachOrbit(canvas, camera, { minR: fit * 0.72, maxR: fit * 1.6, onChange: updatePins });
+    attachOrbit(wrap, camera, { minR: fit * 0.72, maxR: fit * 1.6, onChange: updatePins });
 
     let readyFrames = 0;
     function tick() {

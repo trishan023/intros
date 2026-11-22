@@ -42,6 +42,7 @@
     pointer-events: none;
   }
   #globe-wrap {
+    touch-action: none;
     position: relative;
     flex: 1 1 auto;
     min-height: 0;
@@ -72,12 +73,12 @@
     cursor: pointer;
     pointer-events: auto;
     transform: translate(-50%, -50%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
-  .pin:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; border-radius: 50%; }
+  .pin:focus-visible { outline: 2px solid #c45c4a; outline-offset: 2px; border-radius: 50%; }
   #hint {
     position: absolute;
     left: 0; right: 0;
@@ -175,37 +176,92 @@
     font-weight: 500;
     color: #9a8070;
   }
-  .pin-visual {
+  /* Pin: coral dot exactly on the city + cream chip (face + first name). */
+  .pin-dot {
     position: absolute;
     left: 50%; top: 50%;
-    width: 22px; height: 28px;
-    transform: translate(-50%, -100%);
-  }
-  .pin-bubble {
-    position: absolute;
-    left: 50%; top: 2px;
-    width: 16px; height: 16px;
-    margin-left: -8px;
+    width: 9px; height: 9px;
+    margin: -4.5px 0 0 -4.5px;
     border-radius: 50%;
     background: #F07167;
-    border: 3px solid #fff;
-    box-shadow: 0 2px 0 rgba(180, 100, 80, 0.25);
+    border: 2px solid #fffdf8;
+    box-shadow: 0 0 0 1px #f0c9b0;
+    z-index: 2;
+    pointer-events: none;
   }
-  .pin-stem {
+  .pin-chip {
     position: absolute;
-    left: 50%; top: 16px;
-    width: 3px; height: 8px;
-    margin-left: -1.5px;
-    background: #F07167;
-    border-radius: 0 0 2px 2px;
+    left: 0; top: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 24px;
+    margin: 0;
+    border: 0;
+    padding: 2px 8px 2px 2px;
+    background: #fffdf8;
+    border-radius: 999px;
+    box-shadow: 0 0 0 1.5px #f0c9b0, 0 3px 8px rgba(90, 60, 40, 0.12);
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    pointer-events: auto;
+    -webkit-appearance: none;
+    appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    will-change: transform;
   }
-  .pin.is-on .pin-visual { transform: translate(-50%, -100%) scale(1.08); }
-  .pin.is-on .pin-bubble {
+  /* bigger invisible tap target around the chip (44px tall) */
+  .pin-chip::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    top: -10px; bottom: -10px;
+  }
+  .pin-chip.is-hidden { display: none; }
+  .pin-face {
+    display: block;
     width: 18px; height: 18px;
-    margin-left: -9px;
-    background: #E85A4F;
-    box-shadow: 0 0 0 4px rgba(240,113,103,0.25);
+    border-radius: 50%;
+    object-fit: cover;
+    background: #f7e1b5;
+    pointer-events: none;
+    flex: 0 0 auto;
   }
+  .pin-name {
+    font-family: Fredoka, Nunito, system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    color: #3b342e;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .pin-leader {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 2px;
+    height: var(--leader-len, 0px);
+    margin-left: -1px;
+    background: #fffdf8;
+    box-shadow: 0 0 0 1px #f0c9b0;
+    transform-origin: top center;
+    transform: rotate(var(--leader-rot, 0rad));
+    pointer-events: none;
+    opacity: 0;
+    z-index: 1;
+  }
+  .pin.has-leader .pin-leader { opacity: 1; }
+  .pin.is-on .pin-dot {
+    background: #E85A4F;
+    box-shadow: 0 0 0 1px #E85A4F, 0 0 0 4px rgba(232, 90, 79, 0.22);
+  }
+  .pin-chip.is-on { box-shadow: 0 0 0 1.5px #E85A4F, 0 3px 8px rgba(90, 60, 40, 0.12); }
+  .pin.is-back, .pin-chip.is-back { filter: saturate(0.7); }
   #card {
     left: 18px; right: 18px; bottom: 20px;
     padding: 16px 52px 18px 16px;
